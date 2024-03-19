@@ -6,12 +6,6 @@ edition = "2021"
 [dependencies]
 axum = { version = "0.6", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
-tower = { version = "0.4.13", features = ["util"] }
-hyper = { version = "0.14.27", features = ["full"] }
-mime = { version = "0.3.17" }
 # serialize
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-# random
-rand = { version = "0.8.5" }
-rand-07 = { package = "rand", version = "0.7.0" }
