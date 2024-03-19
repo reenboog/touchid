@@ -1,5 +1,5 @@
-use std::{collections::BTreeMap, sync::Arc};
 use lock::Lock;
+use std::{collections::BTreeMap, sync::Arc};
 
 use axum::{
 	extract::{self, Path},
@@ -36,7 +36,7 @@ pub enum Error {
 impl IntoResponse for Error {
 	fn into_response(self) -> axum::response::Response {
 		let status = match self {
-			Error::NotFound => StatusCode::GONE
+			Error::NotFound => StatusCode::GONE,
 		};
 
 		status.into_response()
@@ -89,9 +89,7 @@ pub async fn unlock(
 	}
 }
 
-pub async fn purge(
-	extract::State(state): extract::State<State>,
-) -> Result<StatusCode, Error> {
+pub async fn purge(extract::State(state): extract::State<State>) -> Result<StatusCode, Error> {
 	let mut locks = state.users.lock().await;
 
 	locks.clear();
