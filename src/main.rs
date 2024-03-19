@@ -1,5 +1,5 @@
 use lock::Lock;
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
 use axum::{
 	extract::{self, Path},
@@ -9,22 +9,22 @@ use axum::{
 	Json, Router,
 };
 
-use tokio::sync::Mutex;
+use dashmap::DashMap;
 
 mod lock;
 
 #[derive(Clone)]
 pub struct State {
-	pub(crate) users: Arc<Mutex<BTreeMap<String, Lock>>>,
+	pub(crate) locks: Arc<DashMap<String, Lock>>,
 }
 
 impl State {
 	pub fn new() -> Self {
-		Self::new_with_data(Arc::new(Mutex::new(BTreeMap::new())))
+		Self::new_with_data(Arc::new(DashMap::new()))
 	}
 
-	pub fn new_with_data(data: Arc<Mutex<BTreeMap<String, Lock>>>) -> Self {
-		Self { users: data }
+	pub fn new_with_data(data: Arc<DashMap<String, Lock>>) -> Self {
+		Self { locks: data }
 	}
 }
 
@@ -69,9 +69,7 @@ pub async fn lock(
 	Path(id): Path<String>,
 	extract::Json(lock): extract::Json<Lock>,
 ) -> Result<StatusCode, Error> {
-	let mut locks = state.users.lock().await;
-
-	locks.insert(id.clone(), lock.clone());
+	state.locks.insert(id.clone(), lock.clone());
 
 	Ok(StatusCode::CREATED)
 }
@@ -80,9 +78,7 @@ pub async fn unlock(
 	extract::State(state): extract::State<State>,
 	Path(id): Path<String>,
 ) -> Result<(StatusCode, Json<Lock>), Error> {
-	let mut locks = state.users.lock().await;
-
-	if let Some(lock) = locks.remove(&id) {
+	if let Some((_, lock)) = state.locks.remove(&id) {
 		Ok((StatusCode::OK, Json(lock)))
 	} else {
 		Err(Error::NotFound)
@@ -90,9 +86,7 @@ pub async fn unlock(
 }
 
 pub async fn purge(extract::State(state): extract::State<State>) -> Result<StatusCode, Error> {
-	let mut locks = state.users.lock().await;
-
-	locks.clear();
+	state.locks.clear();
 
 	Ok(StatusCode::OK)
 }
